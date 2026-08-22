@@ -1,6 +1,6 @@
 # Ticket Booking System
 
-A full-stack ticket booking platform for movies & concerts: visual seat maps,
+A full-stack ticket booking platform for movies \& concerts: visual seat maps,
 TTL-based seat holds with auto-release, concurrency-safe booking, waitlists
 with automatic seat reassignment, and QR-code email tickets.
 
@@ -8,19 +8,80 @@ with automatic seat reassignment, and QR-code email tickets.
 Socket.io for real-time seat map updates, node-cron for hold/offer expiry,
 `qrcode` + `nodemailer` for tickets.
 
----
+\---
 
-## 1. Setup Guide
+
+
+\## 🔗 Live Demo
+
+
+
+\- \*\*Frontend (live app):\*\* https://ticket-booking-system-sooty-zeta.vercel.app
+
+\- \*\*Backend API:\*\* https://ticket-booking-backend-re2z.onrender.com
+
+
+
+\*\*Demo accounts\*\* (password for all: `password123`):
+
+| Role | Email |
+
+|---|---|
+
+| Admin | admin@example.com |
+
+| Organiser | organiser@example.com |
+
+| Customer | customer@example.com |
+
+
+
+\*\*A few notes on the hosted demo:\*\*
+
+\- The backend runs on Render's free tier, which spins down after \~15 minutes
+
+&#x20; of inactivity. The \*\*first request may take 30–50 seconds\*\* while it wakes
+
+&#x20; back up — this is a hosting limitation, not a bug. Subsequent requests are
+
+&#x20; fast.
+
+\- The database resets to the seeded demo data whenever the backend restarts
+
+&#x20; or redeploys (SQLite on Render's free tier isn't persistent across
+
+&#x20; restarts). Bookings made during a live session may not survive a restart —
+
+&#x20; this is expected for this demo deployment; see `SYSTEM\_DESIGN.md` for how
+
+&#x20; this would be handled with a persistent DB (e.g. Postgres) in production.
+
+\- Booking confirmation and waitlist-offer emails are sent to a test
+
+&#x20; \[Ethereal](https://ethereal.email) inbox rather than the customer's real
+
+&#x20; email address, so email delivery can be demonstrated without needing a
+
+&#x20; real SMTP account. The booking still succeeds normally even if the demo
+
+&#x20; inbox is unreachable — email sending is decoupled from the booking
+
+&#x20; transaction.
+
+
+
+## 1\. Setup Guide
 
 ### Prerequisites
-- Node.js 18+
-- npm
+
+* Node.js 18+
+* npm
 
 ### Backend
 
 ```bash
 cd backend
-cp .env.example .env      # edit values, especially SMTP + JWT_SECRET
+cp .env.example .env      # edit values, especially SMTP + JWT\_SECRET
 npm install
 npm run seed               # optional: creates demo admin/organiser/customer + a sample show
 npm run dev                 # http://localhost:5000
@@ -50,38 +111,39 @@ seeded account. Admin accounts are not self-registrable — use the seeded
 admin login to create venues.
 
 ### Typical demo flow
+
 1. Log in as **admin** → create a Venue with a seat layout.
 2. Log in as **organiser** → create an Event, then schedule a Show at that
-   venue with pricing per category.
+venue with pricing per category.
 3. Log in as **customer** → browse events, open a show, click seats, hold
-   them, checkout. Check the Ethereal inbox for the QR ticket email.
+them, checkout. Check the Ethereal inbox for the QR ticket email.
 4. Open the same show in a second browser (or incognito) as another
-   customer to see real-time seat updates and try to grab a held seat.
+customer to see real-time seat updates and try to grab a held seat.
 
----
+\---
 
-## 2. Database Schema
+## 2\. Database Schema
 
-| Table | Purpose |
-|---|---|
-| `Users` | customer / organiser / admin, bcrypt password hash |
-| `Venues` | physical venue, created by admin |
-| `Seats` | fixed seat layout per venue (row, number, category) |
-| `Events` | movie/concert listing, owned by an organiser |
-| `Shows` | a specific date/time + venue for an Event, with per-category pricing (JSON) |
-| `ShowSeats` | **per-show** status of every seat: `available` / `held` / `booked`, `heldByUserId`, `heldUntil`, `version` |
-| `Bookings` | a confirmed (or cancelled) purchase, with reference code, total, QR data URL |
-| `BookingSeats` | join table: which `ShowSeats` belong to a `Booking`, at what locked-in price |
-| `Waitlist` | queue entries per (Show, category, user): `waiting` / `offered` / `expired` / `fulfilled` |
+|Table|Purpose|
+|-|-|
+|`Users`|customer / organiser / admin, bcrypt password hash|
+|`Venues`|physical venue, created by admin|
+|`Seats`|fixed seat layout per venue (row, number, category)|
+|`Events`|movie/concert listing, owned by an organiser|
+|`Shows`|a specific date/time + venue for an Event, with per-category pricing (JSON)|
+|`ShowSeats`|**per-show** status of every seat: `available` / `held` / `booked`, `heldByUserId`, `heldUntil`, `version`|
+|`Bookings`|a confirmed (or cancelled) purchase, with reference code, total, QR data URL|
+|`BookingSeats`|join table: which `ShowSeats` belong to a `Booking`, at what locked-in price|
+|`Waitlist`|queue entries per (Show, category, user): `waiting` / `offered` / `expired` / `fulfilled`|
 
 Seats are modeled in two layers deliberately: `Seat` is the venue's fixed
 physical layout (reusable across many shows at that venue), while
 `ShowSeat` is the mutable, per-show availability row. This is what lets the
 same physical seat be "available" for one showtime and "booked" for another.
 
----
+\---
 
-## 3. Seat Hold, TTL & Concurrency
+## 3\. Seat Hold, TTL \& Concurrency
 
 **The core problem:** two customers click the same seat within milliseconds
 of each other. Only one may succeed.
@@ -106,7 +168,7 @@ transitions. `confirmBooking` additionally wraps the hold→booked transition
 in a DB transaction with a row lock, since it also has to read pricing and
 write multiple related rows atomically.
 
-Each hold carries a `heldUntil` timestamp (`SEAT_HOLD_TTL_MINUTES` in
+Each hold carries a `heldUntil` timestamp (`SEAT\_HOLD\_TTL\_MINUTES` in
 `.env`, default 10 minutes). A `node-cron` job (`jobs/expireHolds.js`,
 every 30s) sweeps for `held` seats whose TTL has passed and releases them
 back to `available` with the same atomic conditional UPDATE (guarding
@@ -115,9 +177,9 @@ runs). Every release/hold/booking change broadcasts a `seatmap:update`
 event over Socket.io to everyone viewing that show, so seat maps update
 live without polling.
 
----
+\---
 
-## 4. Waitlist & Time-Limited Offer Flow
+## 4\. Waitlist \& Time-Limited Offer Flow
 
 When every seat in a category is `held` or `booked`, the frontend shows a
 **"Join waitlist"** button for that category, creating a `Waitlist` row
@@ -128,11 +190,11 @@ is immediately passed to `waitlistService.offerSeatToNextInLine`, which:
 
 1. Finds the oldest `waiting` entry for that show+category.
 2. Atomically flips it to `offered` (conditional UPDATE — protects against
-   two seats freeing at once and double-offering the same person).
+two seats freeing at once and double-offering the same person).
 3. Re-holds the specific seat against that user, with `heldUntil` set to
-   `WAITLIST_OFFER_TTL_MINUTES` from now (default 15 minutes).
+`WAITLIST\_OFFER\_TTL\_MINUTES` from now (default 15 minutes).
 4. Emails them a direct link to `/shows/:id/checkout?seat=...` to complete
-   the booking.
+the booking.
 
 If the offer window lapses without checkout, the same cron job that
 expires ordinary holds also calls `waitlistService.expireStaleOffers()`,
@@ -140,45 +202,46 @@ which marks the offer `expired`, releases the seat, and **cascades** it to
 the next `waiting` entry in the queue — repeating until someone claims it
 or the queue empties.
 
----
+\---
 
-## 5. API Overview
+## 5\. API Overview
 
-All endpoints except `/auth/*` require `Authorization: Bearer <token>`.
+All endpoints except `/auth/\*` require `Authorization: Bearer <token>`.
 
-| Method | Path | Role | Purpose |
-|---|---|---|---|
-| POST | `/api/auth/register` | any | create account (customer/organiser) |
-| POST | `/api/auth/login` | any | get JWT |
-| POST | `/api/venues` | admin | create venue + seat layout |
-| GET | `/api/venues` | any | list venues |
-| POST | `/api/venues/:id/seats` | admin | add seats to a venue |
-| POST | `/api/events` | organiser | create event |
-| GET | `/api/events?type=&search=` | any | browse/filter events |
-| POST | `/api/events/:id/shows` | organiser | schedule a show + pricing |
-| GET | `/api/events/:id/summary` | organiser | bookings + revenue per show |
-| GET | `/api/shows/:id/seats` | any | seat map with live status |
-| POST | `/api/shows/:id/hold` | any | hold seats `{ seatIds }` |
-| POST | `/api/shows/:id/release` | any | release a hold |
-| POST | `/api/shows/:id/waitlist` | any | join waitlist `{ category }` |
-| POST | `/api/bookings/:showId/checkout` | any | confirm booking for held seats |
-| GET | `/api/bookings/me` | customer | booking history |
-| POST | `/api/bookings/:id/cancel` | customer | cancel + trigger waitlist offer |
+|Method|Path|Role|Purpose|
+|-|-|-|-|
+|POST|`/api/auth/register`|any|create account (customer/organiser)|
+|POST|`/api/auth/login`|any|get JWT|
+|POST|`/api/venues`|admin|create venue + seat layout|
+|GET|`/api/venues`|any|list venues|
+|POST|`/api/venues/:id/seats`|admin|add seats to a venue|
+|POST|`/api/events`|organiser|create event|
+|GET|`/api/events?type=\&search=`|any|browse/filter events|
+|POST|`/api/events/:id/shows`|organiser|schedule a show + pricing|
+|GET|`/api/events/:id/summary`|organiser|bookings + revenue per show|
+|GET|`/api/shows/:id/seats`|any|seat map with live status|
+|POST|`/api/shows/:id/hold`|any|hold seats `{ seatIds }`|
+|POST|`/api/shows/:id/release`|any|release a hold|
+|POST|`/api/shows/:id/waitlist`|any|join waitlist `{ category }`|
+|POST|`/api/bookings/:showId/checkout`|any|confirm booking for held seats|
+|GET|`/api/bookings/me`|customer|booking history|
+|POST|`/api/bookings/:id/cancel`|customer|cancel + trigger waitlist offer|
 
 Socket.io event: client emits `joinShow(showId)`; server emits
 `seatmap:update({ showId })` on any status change for that show.
 
----
+\---
 
-## 6. Deploying
+## 6\. Deploying
 
-- **Backend**: Render/Railway — set the env vars from `.env.example`,
-  build command `npm install`, start command `npm start`. SQLite works for
-  a demo deploy (file persists on disk); for real production, swap
-  `src/config/db.js` to Postgres (see comment in that file) since most
-  free hosts have ephemeral disks.
-- **Frontend**: Vercel/Render static site — build command `npm run build`,
-  output dir `dist`, set `VITE_API_URL`/`VITE_SOCKET_URL` to the deployed
-  backend URL.
+* **Backend**: Render/Railway — set the env vars from `.env.example`,
+build command `npm install`, start command `npm start`. SQLite works for
+a demo deploy (file persists on disk); for real production, swap
+`src/config/db.js` to Postgres (see comment in that file) since most
+free hosts have ephemeral disks.
+* **Frontend**: Vercel/Render static site — build command `npm run build`,
+output dir `dist`, set `VITE\_API\_URL`/`VITE\_SOCKET\_URL` to the deployed
+backend URL.
 
-See `SYSTEM_DESIGN.md` for the concurrency/TTL/waitlist design write-up.
+See `SYSTEM\_DESIGN.md` for the concurrency/TTL/waitlist design write-up.
+
