@@ -1,0 +1,35 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f1115;
+  color: #eaeaea;
+}
+a { color: #7dd3fc; }
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+.nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #161a22; border-bottom: 1px solid #262b36; }
+.nav a { margin-right: 16px; text-decoration: none; font-weight: 600; }
+.btn { background: #38bdf8; color: #0f1115; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.secondary { background: transparent; border: 1px solid #38bdf8; color: #38bdf8; }
+.btn.danger { background: #f87171; }
+input, select, textarea { padding: 8px; border-radius: 6px; border: 1px solid #333; background: #1a1e27; color: #eaeaea; width: 100%; margin-bottom: 12px; }
+.card { background: #161a22; border: 1px solid #262b36; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.grid { display: grid; gap: 16px; }
+.seat-map { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.seat-row { display: flex; gap: 8px; }
+.seat {
+  width: 34px; height: 34px; border-radius: 6px; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; cursor: pointer; border: 1px solid #333;
+}
+.seat.available { background: #1a1e27; }
+.seat.held { background: #facc15; color: #000; cursor: not-allowed; }
+.seat.booked { background: #4b5563; color: #999; cursor: not-allowed; }
+.seat.selected { background: #38bdf8; color: #000; }
+.legend { display: flex; gap: 16px; margin: 12px 0; font-size: 13px; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+.badge.confirmed { background: #166534; }
+.badge.cancelled { background: #7f1d1d; }
+.timer { font-weight: 700; color: #facc15; }

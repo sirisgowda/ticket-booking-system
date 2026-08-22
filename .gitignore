@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next/
+out/
+.env
+backend/data/*.sqlite
+.vscode/
+.idea/
+.DS_Store
